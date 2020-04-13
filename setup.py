@@ -46,7 +46,7 @@ history = open('HISTORY.rst').read().replace('.. :changelog:', '')
 setup(
     name='Django-simplest',
     version=version,
-    description="""Simple Django REST API"",
+    description="""Simple Django REST API""",
     long_description=readme + '\n\n' + history,
     author='Kasun Herath',
     author_email='kasunh01@gmail.com',
