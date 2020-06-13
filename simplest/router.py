@@ -22,9 +22,11 @@ class Router:
     def __repr__(self):
         return f'{self.__class__}: {self.path}'
 
-    def view(self, path, methods, **kwargs):
+    def view(self, path, methods, csrf_exempt=False, **kwargs):
         """ router view """
         def wrapper(fn):
+            if csrf_exempt:
+                fn.csrf_exempt = True
             def inner(*args, **kwargs):
                 return fn(*args, **kwargs)
 
@@ -41,9 +43,11 @@ class Router:
 
         return wrapper
 
-    def get(self, path, **kwargs):
+    def get(self, path, csrf_exempt=False, **kwargs):
         """ view for GET method """
         def wrapper(fn):
+            if csrf_exempt:
+                fn.csrf_exempt = True
             def inner(*args, **kwargs):
                 return fn(*args, **kwargs)
 
@@ -58,9 +62,11 @@ class Router:
 
         return wrapper
 
-    def post(self, path, **kwargs):
+    def post(self, path, csrf_exempt=False, **kwargs):
         """ view for POST method """
         def wrapper(fn):
+            if csrf_exempt:
+                fn.csrf_exempt = True
             def inner(*args, **kwargs):
                 return fn(*args, **kwargs)
 
