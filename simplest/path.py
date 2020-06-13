@@ -3,6 +3,7 @@ class Path:
         self.path = path
         self.method = method
         self.view = view
+        self.csrf_exempt = kwargs.get('csrf_exempt', False)
         self.auth_required = kwargs.get('auth_required', False)
 
     def __repr__(self):

@@ -4,6 +4,7 @@ from collections import defaultdict
 
 from django.urls import include, path, resolve
 from django.http import HttpResponse, JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
 from .path import Path
 
@@ -25,8 +26,6 @@ class Router:
     def view(self, path, methods, csrf_exempt=False, **kwargs):
         """ router view """
         def wrapper(fn):
-            if csrf_exempt:
-                fn.csrf_exempt = True
             def inner(*args, **kwargs):
                 return fn(*args, **kwargs)
 
@@ -36,7 +35,7 @@ class Router:
                 full_path = path
 
             for method in methods:
-                path_instance = Path(full_path, method, fn, auth_required=kwargs.get('auth', False))
+                path_instance = Path(full_path, method, fn, csrf_exempt=csrf_exempt, auth_required=kwargs.get('auth', False))
                 self.route_map[full_path][method] = path_instance
 
             return inner
@@ -46,8 +45,6 @@ class Router:
     def get(self, path, csrf_exempt=False, **kwargs):
         """ view for GET method """
         def wrapper(fn):
-            if csrf_exempt:
-                fn.csrf_exempt = True
             def inner(*args, **kwargs):
                 return fn(*args, **kwargs)
 
@@ -56,7 +53,7 @@ class Router:
             else:
                 full_path = path
 
-            path_instance = Path(full_path, 'GET', fn, auth_required=kwargs.get('auth', False))
+            path_instance = Path(full_path, 'GET', fn, csrf_exempt=csrf_exempt, auth_required=kwargs.get('auth', False))
             self.route_map[full_path]['GET'] = path_instance
             return inner
 
@@ -65,8 +62,6 @@ class Router:
     def post(self, path, csrf_exempt=False, **kwargs):
         """ view for POST method """
         def wrapper(fn):
-            if csrf_exempt:
-                fn.csrf_exempt = True
             def inner(*args, **kwargs):
                 return fn(*args, **kwargs)
 
@@ -75,7 +70,7 @@ class Router:
             else:
                 full_path = path
 
-            path_instance = Path(full_path, 'POST', fn, auth_required=kwargs.get('auth', False))
+            path_instance = Path(full_path, 'POST', fn, csrf_exempt=csrf_exempt, auth_required=kwargs.get('auth', False))
             self.route_map[full_path]['POST'] = path_instance
             return inner
 
@@ -83,8 +78,11 @@ class Router:
 
     def generate_url_patterns(self):
         patterns = []
-        for path_str in self.route_map.keys():
-            patterns.append(path(path_str, self.route))
+        for path_str, paths in self.route_map.items():
+            if any([p.csrf_exempt for p in paths.values()]):
+                patterns.append(path(path_str, csrf_exempt(self.route)))
+            else:
+                patterns.append(path(path_str, self.route))
 
         for child in self.children:
             patterns.extend(child.generate_url_patterns())
@@ -106,7 +104,7 @@ class Router:
                 child (Router) """
         self.children.append(child)
 
-    def route(self, request, **kwargs):
+    def _route(self, request, **kwargs):
         route_path = resolve(request.path).route
         try:
             path_object = self.route_map[route_path][request.method]
@@ -127,7 +125,10 @@ class Router:
             return res
 
         return JsonResponse(res, safe=False)
-    
+
+    def route(self, request, **kwargs):
+        return self._route(request, **kwargs)
+
 
 def router(parent_router=None, path=None):
     return Router(parent_router, path)
